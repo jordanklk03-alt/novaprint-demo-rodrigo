@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Configurator from "./pages/Configurator";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAIDesigner from "./pages/AdminAIDesigner";
 import NotFound from "./pages/NotFound";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/personalizar" component={Configurator} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/ai" component={AdminAIDesigner} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

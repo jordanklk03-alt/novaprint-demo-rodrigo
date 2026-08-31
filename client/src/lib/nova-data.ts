@@ -107,6 +107,7 @@ export const navItems = [
   { label: "Dashboard", icon: "grid" },
   { label: "Productos", icon: "box" },
   { label: "Personalización", icon: "wand" },
+  { label: "IA Designer", icon: "sparkles" },
   { label: "Diseños", icon: "sparkles" },
   { label: "Pedidos", icon: "shopping-bag" },
   { label: "Clientes", icon: "users" },
