@@ -16,3 +16,8 @@
 - [ ] Subir el checkpoint actual de NOVAprint al repositorio.
 - [ ] Verificar ramas, archivos y ausencia de secretos expuestos.
 - [ ] Entregar la URL del repositorio y explicar cómo sincronizar cambios futuros.
+
+## Bloqueo actual
+
+- [ ] Resolver el permiso de GitHub: la cuenta autenticada no permite crear repositorios mediante la autorización disponible.
+- [ ] Crear el repositorio vacío o autorizar el permiso de creación y volver a ejecutar el push.
