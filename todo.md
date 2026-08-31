@@ -8,3 +8,11 @@
 - [x] Ejecutar comprobaciones de TypeScript y build de producción.
 - [x] Capturar vistas desktop y móvil de las rutas actualizadas.
 - [ ] Guardar un nuevo checkpoint y entregar el resultado.
+
+## Exportación a GitHub
+
+- [ ] Habilitar y autorizar la conexión segura con GitHub.
+- [ ] Confirmar el propietario, nombre y visibilidad del repositorio destino.
+- [ ] Subir el checkpoint actual de NOVAprint al repositorio.
+- [ ] Verificar ramas, archivos y ausencia de secretos expuestos.
+- [ ] Entregar la URL del repositorio y explicar cómo sincronizar cambios futuros.
