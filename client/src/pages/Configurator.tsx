@@ -1,9 +1,14 @@
 // NOVAprint / Creative Commerce Studio: configurador en tres estaciones, con preview dominante y precio explicado en tiempo real.
 import { ChangeEvent, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
+import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, ChevronDown, Eye, EyeOff, ImagePlus, Layers3, Minus, Plus, Redo2, RotateCw, ShoppingBag, Sparkles, Trash2, Type, Undo2, Upload, WandSparkles } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { AIDesignerModal, AIProposal } from "@/components/AIDesignerModal";
+import { Thermo3DViewer } from "@/components/Thermo3DViewer";
 import { designs, priceRules, products } from "@/lib/nova-data";
 
 const thermo = products[0];
@@ -23,6 +28,18 @@ export default function Configurator() {
   const [aiGenerated, setAiGenerated] = useState(false);
   const [aiOpen, setAiOpen] = useState(() => new URLSearchParams(window.location.search).get("ai") === "1");
   const [added, setAdded] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const checkout = trpc.customer.createCheckout.useMutation({
+    onSuccess: ({ checkoutUrl }) => {
+      if (!checkoutUrl) {
+        toast.error("Stripe no ha devuelto una URL de checkout");
+        return;
+      }
+      toast.success("Abriendo checkout seguro de Stripe");
+      window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+    },
+    onError: () => toast.error("No hemos podido preparar el checkout"),
+  });
   const basePrice = thermo.price;
   const selectedDesignData = designs.find((design) => design.id === selectedDesign);
   const total = useMemo(() => basePrice + (imageUrl ? priceRules[0].value : 0) + (text.trim() ? priceRules[1].value : 0) + (selectedDesignData ? priceRules[2].value : 0) + (aiGenerated ? 2.99 : 0), [aiGenerated, imageUrl, selectedDesignData, text]);
@@ -35,7 +52,16 @@ export default function Configurator() {
     reader.readAsDataURL(file);
   };
 
-  const thermoColorClass = selectedColor.name.toLowerCase().replace(" ", "-").replace("ó", "o");
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      toast.info("Inicia sesión para guardar tus datos y continuar al checkout");
+      startLogin();
+      return;
+    }
+    checkout.mutate({
+      items: [{ productId: "thermo", quantity: 1, customizationFeeCents: Math.round((total - basePrice) * 100) }],
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f6f2] text-[#111111]">
@@ -54,12 +80,12 @@ export default function Configurator() {
           </aside>
 
           <div className="order-1 min-w-0 lg:order-2">
-            <div className="nova-surface relative overflow-hidden bg-[#eceeea] p-3 sm:p-5"><div className="flex items-center justify-between pb-4"><div className="flex items-center gap-2 font-display text-[10px] font-bold uppercase tracking-[.14em] text-[#6b7280]"><span className="h-2 w-2 rounded-full bg-[#2563eb]" /> Área de impresión</div><div className="flex items-center gap-2 text-[10px] font-medium text-[#9ca3af]"><span>100%</span><ChevronDown size={13} /></div></div><div className="nova-product-canvas nova-grid-line flex min-h-[430px] items-center justify-center rounded-[18px] border border-black/[.05] sm:min-h-[540px]"><div className={`nova-thermo nova-thermo-${thermoColorClass}`}><div className="nova-thermo-label"><span style={{ color: aiDesign?.tone || selectedDesignData?.tone || "#2563eb" }}>{aiDesign?.mark || selectedDesignData?.mark || "N"}</span><span className={selectedColor.name === "Negro" ? "!text-white/75" : ""}>{aiDesign?.name || selectedDesignData?.name || "Diseña el tuyo"}</span></div>{imageUrl && <img src={imageUrl} alt="Tu imagen subida" className="absolute left-[26px] top-[126px] z-[3] h-[74px] w-[74px] rounded-xl object-cover opacity-90 shadow-lg" />}{text && <span className="absolute left-[26px] right-[26px] top-[212px] z-[3] text-center font-display text-[12px] font-bold text-[#111111]">{text}</span>}{selectedEmoji && <span className="absolute right-[22px] top-[196px] z-[3] rotate-[-12deg] text-xl">{selectedEmoji}</span>}</div><span className="absolute bottom-4 left-4 rounded-full bg-white/85 px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.1em] text-[#6b7280] backdrop-blur-sm">Vista frontal · 01</span><span className="absolute bottom-4 right-4 hidden rounded-full border border-black/10 bg-white/80 px-3 py-2 font-display text-[10px] font-semibold text-[#6b7280] sm:block">Arrastra para mover</span></div></div>
+            <div className="nova-surface relative overflow-hidden bg-[#eceeea] p-3 sm:p-5"><div className="flex items-center justify-between pb-4"><div className="flex items-center gap-2 font-display text-[10px] font-bold uppercase tracking-[.14em] text-[#6b7280]"><span className="h-2 w-2 rounded-full bg-[#2563eb]" /> Área de impresión</div><div className="flex items-center gap-2 text-[10px] font-medium text-[#9ca3af]"><span>100%</span><ChevronDown size={13} /></div></div><div className="nova-product-canvas nova-grid-line flex min-h-[430px] items-center justify-center rounded-[18px] border border-black/[.05] sm:min-h-[540px]"><Thermo3DViewer artworkUrl={imageUrl || undefined} artworkText={text || aiDesign?.name || selectedDesignData?.name} accent={aiDesign?.tone || selectedDesignData?.tone} thermoColor={selectedColor.hex} /><span className="absolute bottom-4 left-4 rounded-full bg-white/85 px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.1em] text-[#6b7280] backdrop-blur-sm">Vista frontal · 01</span><span className="absolute bottom-4 right-4 hidden rounded-full border border-black/10 bg-white/80 px-3 py-2 font-display text-[10px] font-semibold text-[#6b7280] sm:block">Arrastra para mover</span></div></div>
             <div className="mt-3 flex items-center justify-between px-1"><div className="flex items-center gap-2 text-[11px] text-[#6b7280]"><span className="grid h-6 w-6 place-items-center rounded-full bg-[#e8f0ff] text-[#2563eb]"><Layers3 size={13} /></span>3 capas disponibles</div><div className="flex gap-1"><button type="button" className="nova-press grid h-8 w-8 place-items-center rounded-full border border-black/10 bg-white text-[#6b7280] hover:text-[#2563eb]"><Minus size={13} /></button><button type="button" className="nova-press grid h-8 w-8 place-items-center rounded-full border border-black/10 bg-white text-[#6b7280] hover:text-[#2563eb]"><Plus size={13} /></button></div></div>
           </div>
 
           <aside className="order-3 space-y-3 lg:sticky lg:top-[96px]">
-            <div className="nova-surface-flat bg-white p-5"><div className="flex items-start justify-between gap-4"><div><span className="nova-kicker">Resumen</span><h2 className="mt-2 font-display text-xl font-semibold tracking-[-.04em]">Termo Nova 500ml</h2></div><span className="rounded-full bg-[#e8f0ff] px-2.5 py-1 font-display text-[10px] font-bold text-[#2563eb]">1 unidad</span></div><div className="mt-5 space-y-3 border-t border-black/[.08] pt-4 text-[12px]"> <div className="flex justify-between"><span className="text-[#6b7280]">Precio base</span><span className="font-semibold">{basePrice.toFixed(2).replace(".", ",")} €</span></div>{imageUrl && <div className="flex justify-between text-[#2563eb]"><span>Imagen personalizada</span><span>+3,00 €</span></div>}{text && <div className="flex justify-between text-[#2563eb]"><span>Texto personalizado</span><span>+1,50 €</span></div>}{selectedDesignData && <div className="flex justify-between text-[#2563eb]"><span>Diseño premium</span><span>+4,95 €</span></div>}{aiGenerated && <div className="flex justify-between text-[#2563eb]"><span>Pack AI Designer · 3 propuestas</span><span>+2,99 €</span></div>}</div><div className="mt-5 flex items-end justify-between border-t border-black/[.08] pt-4"><span className="font-display text-[11px] font-bold uppercase tracking-[.12em] text-[#6b7280]">Total</span><span className="font-display text-3xl font-semibold tracking-[-.06em]">{total.toFixed(2).replace(".", ",")} €</span></div><button type="button" onClick={() => setAdded(true)} className="nova-press mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-5 py-3.5 font-display text-[12px] font-bold text-white shadow-[0_12px_25px_rgba(37,99,235,.2)] transition-colors hover:bg-[#1746a2]"><ShoppingBag size={15} />{added ? "Añadido al carrito" : "Añadir al carrito"}</button>{added && <p className="mt-3 text-center text-[11px] font-medium text-[#2563eb]">Tu diseño está listo para continuar.</p>}</div>
+            <div className="nova-surface-flat bg-white p-5"><div className="flex items-start justify-between gap-4"><div><span className="nova-kicker">Resumen</span><h2 className="mt-2 font-display text-xl font-semibold tracking-[-.04em]">Termo Nova 500ml</h2></div><span className="rounded-full bg-[#e8f0ff] px-2.5 py-1 font-display text-[10px] font-bold text-[#2563eb]">1 unidad</span></div><div className="mt-5 space-y-3 border-t border-black/[.08] pt-4 text-[12px]"> <div className="flex justify-between"><span className="text-[#6b7280]">Precio base</span><span className="font-semibold">{basePrice.toFixed(2).replace(".", ",")} €</span></div>{imageUrl && <div className="flex justify-between text-[#2563eb]"><span>Imagen personalizada</span><span>+3,00 €</span></div>}{text && <div className="flex justify-between text-[#2563eb]"><span>Texto personalizado</span><span>+1,50 €</span></div>}{selectedDesignData && <div className="flex justify-between text-[#2563eb]"><span>Diseño premium</span><span>+4,95 €</span></div>}{aiGenerated && <div className="flex justify-between text-[#2563eb]"><span>Pack AI Designer · 3 propuestas</span><span>+2,99 €</span></div>}</div><div className="mt-5 flex items-end justify-between border-t border-black/[.08] pt-4"><span className="font-display text-[11px] font-bold uppercase tracking-[.12em] text-[#6b7280]">Total</span><span className="font-display text-3xl font-semibold tracking-[-.06em]">{total.toFixed(2).replace(".", ",")} €</span></div><button type="button" onClick={() => { setAdded(true); handleCheckout(); }} disabled={checkout.isPending} className="nova-press mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-5 py-3.5 font-display text-[12px] font-bold text-white shadow-[0_12px_25px_rgba(37,99,235,.2)] transition-colors hover:bg-[#1746a2] disabled:cursor-wait disabled:opacity-70"><ShoppingBag size={15} />{checkout.isPending ? "Preparando checkout…" : isAuthenticated ? "Ir al checkout" : "Guardar y continuar"}</button>{added && <p className="mt-3 text-center text-[11px] font-medium text-[#2563eb]">Tu diseño está listo para continuar.</p>}</div>
             <div className="nova-surface-flat bg-white p-5"><div className="flex items-center justify-between"><span className="font-display text-[11px] font-bold uppercase tracking-[.12em]">Capas</span><span className="text-[10px] text-[#9ca3af]">{[imageUrl, text, selectedEmoji, selectedDesign].filter(Boolean).length || 1}/4</span></div><div className="mt-3 space-y-1.5">{[{ label: text || "Texto", active: Boolean(text), icon: Type }, { label: aiDesign?.name || selectedDesignData?.name || "Diseño", active: Boolean(selectedDesign || aiDesign), icon: Sparkles }, { label: imageUrl ? "Imagen subida" : "Foto", active: Boolean(imageUrl), icon: ImagePlus }].map((layer) => <div key={layer.label} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11px] ${layer.active ? "bg-[#e8f0ff] text-[#1746a2]" : "text-[#9ca3af]"}`}><layer.icon size={14} /><span className="flex-1 truncate">{layer.label}</span>{layer.active ? <Eye size={14} /> : <EyeOff size={14} />}<button type="button" aria-label={`Eliminar ${layer.label}`} className="ml-1 opacity-50 hover:text-[#dc2626] hover:opacity-100"><Trash2 size={13} /></button></div>)}</div></div>
           </aside>
         </section>

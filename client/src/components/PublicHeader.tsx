@@ -1,12 +1,14 @@
 // NOVAprint / Creative Commerce Studio: navegación pública aireada, editorial y orientada a crear.
 import { Link, useLocation } from "wouter";
-import { ArrowUpRight, Menu, ShoppingBag, X } from "lucide-react";
+import { ArrowUpRight, Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { NovaBrand } from "@/components/NovaBrand";
 
 export function PublicHeader() {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
   const links = [
     { label: "Productos", href: "/#productos" },
     { label: "Cómo funciona", href: "/#como-funciona" },
@@ -33,9 +35,8 @@ export function PublicHeader() {
           <Link href="/personalizar" className="nova-press hidden items-center gap-2 rounded-full bg-[#2563eb] px-5 py-3 font-display text-[12px] font-bold text-white shadow-[0_10px_25px_rgba(37,99,235,.2)] transition-all hover:bg-[#1746a2] sm:inline-flex">
             Personalizar ahora <ArrowUpRight size={15} />
           </Link>
-          <button type="button" aria-label="Abrir carrito" className="nova-press grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white text-[#111111] transition-colors hover:border-[#2563eb] hover:text-[#2563eb]">
-            <ShoppingBag size={17} strokeWidth={1.7} />
-          </button>
+          <Link href="/cuenta" aria-label={isAuthenticated ? "Abrir mi cuenta" : "Iniciar sesión"} className="nova-press grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white text-[#111111] no-underline transition-colors hover:border-[#2563eb] hover:text-[#2563eb]"><UserRound size={17} strokeWidth={1.7} /></Link>
+          <Link href="/carrito" aria-label="Abrir carrito" className="nova-press grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white text-[#111111] no-underline transition-colors hover:border-[#2563eb] hover:text-[#2563eb]"><ShoppingBag size={17} strokeWidth={1.7} /></Link>
           <button type="button" aria-label={open ? "Cerrar menú" : "Abrir menú"} onClick={() => setOpen(!open)} className="grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white text-[#111111] md:hidden">
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -49,6 +50,7 @@ export function PublicHeader() {
                 {link.label}
               </a>
             ))}
+            <Link href="/cuenta" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 font-display text-sm font-semibold text-[#2563eb]">{isAuthenticated ? "Mi cuenta" : "Iniciar sesión"}</Link>
             <Link href="/admin" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 font-display text-sm font-semibold text-[#2563eb]">Abrir panel admin</Link>
           </div>
         </div>
